@@ -1,0 +1,36 @@
+{
+  "name": "on-time",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/material": "^9.0.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.14.0",
+    "mapbox-gl": "^3.23.0",
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "postcss": "^8.5.13",
+    "tailwindcss": "^4.2.4",
+    "typescript": "^5"
+  }
+}
