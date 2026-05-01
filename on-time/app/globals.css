@@ -307,18 +307,14 @@ body {
 }
 
 .dashboard-stepper-track {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .dashboard-stepper-line,
 .dashboard-stepper-progress {
-  position: absolute;
-  top: 1.25rem;
-  height: 0.25rem;
-  border-radius: 9999px;
+  display: none;
 }
 
 .dashboard-stepper-line {
@@ -341,6 +337,164 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+}
+
+.dashboard-step-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 6rem;
+  padding: 0.875rem 0.625rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(115, 118, 134, 0.22);
+  background: var(--surface-low);
+  color: var(--outline);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.dashboard-step-button:hover {
+  transform: translateY(-1px);
+}
+
+.dashboard-step-button:active {
+  transform: scale(0.98);
+}
+
+.dashboard-step-icon-wrap {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-lowest);
+  border: 1px solid rgba(115, 118, 134, 0.2);
+}
+
+.dashboard-step-icon {
+  font-size: 1.25rem;
+}
+
+.dashboard-step-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.dashboard-step-button--done {
+  background: #e8f7ee;
+  border-color: #b6e5c6;
+  color: #0f6a39;
+}
+
+.dashboard-step-button--done .dashboard-step-icon-wrap {
+  background: #16a34a;
+  border-color: #15803d;
+  color: #ffffff;
+}
+
+.dashboard-step-button--active {
+  background: linear-gradient(135deg, #004ac6, #2563eb);
+  border-color: rgba(0, 74, 198, 0.35);
+  box-shadow: 0 8px 20px -10px rgba(0, 74, 198, 0.42);
+  color: #ffffff;
+}
+
+.dashboard-step-button--active .dashboard-step-icon-wrap {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.dashboard-step-button--pending {
+  background: var(--surface-low);
+  border-color: rgba(115, 118, 134, 0.2);
+  color: var(--outline);
+}
+
+.dashboard-step-button--pending .dashboard-step-icon-wrap {
+  background: var(--surface-lowest);
+  color: var(--outline);
+}
+
+.dashboard-status-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(25, 28, 29, 0.35);
+  backdrop-filter: blur(2px);
+}
+
+.dashboard-status-modal {
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 1rem;
+  background: var(--surface-lowest);
+  box-shadow: 0 24px 24px -4px rgba(25, 28, 29, 0.2);
+  padding: 2rem;
+  text-align: center;
+}
+
+.dashboard-status-modal-icon {
+  width: 5.5rem;
+  height: 5.5rem;
+  margin: 0 auto 1.25rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-fixed);
+  color: var(--primary);
+}
+
+.dashboard-status-modal-icon .material-symbols-outlined {
+  font-size: 2.25rem;
+}
+
+.dashboard-status-modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--on-surface);
+}
+
+.dashboard-status-modal-text {
+  margin: 0.5rem 0 1.5rem;
+  color: var(--on-surface-variant);
+  font-size: 0.95rem;
+}
+
+.dashboard-status-modal-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dashboard-status-modal-actions .dashboard-action,
+.dashboard-status-modal-actions .dashboard-action--secondary {
+  width: 100%;
+  max-width: 14rem;
+}
+
+.dashboard-status-modal-actions .dashboard-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .dashboard-step-bullet {
@@ -784,6 +938,10 @@ body {
 
   .sessions-header {
     flex-direction: row;
+
+    .dashboard-stepper-track {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
     align-items: flex-end;
   }
 }
@@ -852,5 +1010,13 @@ body {
   .dashboard-info-grid,
   .dashboard-actions {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-stepper-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-step-button {
+    min-height: 5.75rem;
   }
 }

@@ -3,32 +3,36 @@ interface StepProps {
   active?: boolean;
   icon: string;
   label: string;
+  onClick?: () => void;
 }
 
-export default function Step({ done, active, icon, label }: StepProps) {
+export default function Step({
+  label,
+  icon,
+  done,
+  active,
+  onClick,
+}: StepProps) {
+  const stateClass = done
+    ? "dashboard-step-button--done"
+    : active
+      ? "dashboard-step-button--active"
+      : "dashboard-step-button--pending";
+
   return (
-    <div className="dashboard-step">
-      <div
-        className={`dashboard-step-bullet ${
-          done
-            ? "dashboard-step-bullet--done"
-            : active
-              ? "dashboard-step-bullet--active"
-              : "dashboard-step-bullet--pending"
-        }`}
-      >
-        <span className="material-symbols-outlined">{icon}</span>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`dashboard-step-button ${stateClass}`}
+      aria-current={active ? "step" : undefined}
+    >
+      <div className="dashboard-step-icon-wrap">
+        <span className="material-symbols-outlined dashboard-step-icon">
+          {icon}
+        </span>
       </div>
 
-      <span
-        className={`dashboard-step-label ${
-          active || done
-            ? "dashboard-step-label--active"
-            : "dashboard-step-label--pending"
-        }`}
-      >
-        {label}
-      </span>
-    </div>
+      <span className="dashboard-step-text">{label}</span>
+    </button>
   );
 }
