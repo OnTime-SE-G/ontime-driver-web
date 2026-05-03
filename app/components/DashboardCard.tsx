@@ -15,7 +15,69 @@ interface StepMeta {
   summary: string;
 }
 
+interface DriverSession {
+  driverId: string;
+  routeId: number;
+  busId: string;
+  startedAt: string;
+}
+
+interface LiveBus {
+  id: string;
+  status: string;
+  route_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 export default function DashboardCard() {
+  const [session, setSession] = useState<DriverSession | null>(null);
+  const [routeName, setRouteName] = useState<string>("Colombo → Piliyandala");
+  const [liveBus, setLiveBus] = useState<LiveBus | null>(null);
+
+  useEffect(() => {
+    fetch("/api/session")
+      .then((r) => r.json())
+      .then((data: DriverSession | null) => {
+        if (!data) return;
+        setSession(data);
+        fetch(`/api/routes/${data.routeId}`)
+          .then((r) => r.json())
+          .then((geojson) => {
+            const routeFeature = geojson.features?.find(
+              (f: { properties: { feature_type: string; name: string } }) =>
+                f.properties?.feature_type === "route"
+            );
+            if (routeFeature?.properties?.name) {
+              setRouteName(routeFeature.properties.name);
+            }
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const load = () =>
+      fetch("/api/buses/live")
+        .then((r) => r.json())
+        .then((buses: LiveBus[]) => {
+          if (!Array.isArray(buses) || buses.length === 0) return;
+          const match = session
+            ? buses.find((b) => b.id === session.busId) ?? buses[0]
+            : buses[0];
+          setLiveBus(match);
+        })
+        .catch(() => {});
+
+    load();
+    const interval = setInterval(load, 5000);
+    return () => clearInterval(interval);
+  }, [session]);
+
+  const busLabel = session ? `BUS #${session.busId}` : "BUS #882";
+  const speedLabel = liveBus ? "Live" : "42 km/h";
+
   const journeySteps: StepLabel[] = [
     "Taken Bus",
     "At Bus Stand",
@@ -93,7 +155,7 @@ export default function DashboardCard() {
         <div className="dashboard-card-content">
           {/* BADGES */}
           <div className="dashboard-badges">
-            <span className="dashboard-pill dashboard-pill--bus">BUS #882</span>
+            <span className="dashboard-pill dashboard-pill--bus">{busLabel}</span>
 
             <span className="dashboard-pill dashboard-pill--active">
               <span className="dashboard-pill-dot"></span>
@@ -102,12 +164,10 @@ export default function DashboardCard() {
           </div>
 
           {/* TITLE */}
-          <h3 className="dashboard-route">
-            Colombo <span className="dashboard-route-arrow">→</span> Piliyandala
-          </h3>
+          <h3 className="dashboard-route">{routeName}</h3>
 
           <p className="dashboard-route-meta">
-            Route 120 Express • Expected Arrival 14:30
+            {session ? `Route ${session.routeId}` : "Route 120 Express"} • Expected Arrival 14:30
           </p>
 
           {/* INFO */}
@@ -133,7 +193,7 @@ export default function DashboardCard() {
               </span>
               <div>
                 <p className="dashboard-info-title">CURRENT SPEED</p>
-                <p className="dashboard-info-value">42 km/h</p>
+                <p className="dashboard-info-value">{speedLabel}</p>
               </div>
             </div>
           </div>
