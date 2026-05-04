@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [licenseNumber, setLicenseNumber] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,41 +23,18 @@ export default function LoginPage() {
 
         {/* FORM */}
         <form onSubmit={handleLogin} className="auth-form">
-          {/* Operator ID */}
+          {/* License Number */}
           <div>
-            <label className="auth-field-label">Operator ID</label>
-
+            <label className="auth-field-label">License Number</label>
             <div>
               <input
-                placeholder="Enter your 6-digit ID"
+                required
+                value={licenseNumber}
+                onChange={(e) => setLicenseNumber(e.target.value)}
+                placeholder="Enter your license number"
                 className="auth-input"
               />
             </div>
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="auth-field-label">Passcode</label>
-
-            <div>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="auth-input"
-              />
-            </div>
-          </div>
-
-          {/* Options */}
-          <div className="auth-row">
-            <label className="auth-remember">
-              <input type="checkbox" />
-              Remember me
-            </label>
-
-            <a href="#" className="auth-link">
-              Forgot Passcode?
-            </a>
           </div>
 
           {/* Button */}

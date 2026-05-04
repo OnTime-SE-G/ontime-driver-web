@@ -872,6 +872,30 @@ body {
   background: linear-gradient(135deg, var(--primary), var(--primary-container));
   color: #ffffff;
   font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.sessions-start-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sessions-chip--active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.sessions-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .sessions-note {

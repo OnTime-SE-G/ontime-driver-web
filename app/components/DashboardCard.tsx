@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Step from "./Step";
+import { fetchLiveBuses, fetchAllRoutes } from "@/lib/api";
 
 type StepLabel =
   | "Taken Bus"
@@ -16,6 +17,28 @@ interface StepMeta {
 }
 
 export default function DashboardCard() {
+  const [busLabel, setBusLabel] = useState("BUS —");
+  const [routeLabel, setRouteLabel] = useState("Loading...");
+
+  useEffect(() => {
+    Promise.all([fetchLiveBuses(), fetchAllRoutes()])
+      .then(([buses, routes]) => {
+        const bus = buses.find((b) => b.route_id) ?? buses[0];
+        if (bus) setBusLabel(`BUS #${bus.id}`);
+        const route = bus?.route_id
+          ? routes.find((r) => String(r.id) === bus.route_id)
+          : routes[0];
+        if (route) {
+          const parts = route.name.split(" - ");
+          setRouteLabel(parts.length > 1 ? `${parts[0]?.trim()} → ${parts[1]?.trim()}` : route.name);
+        }
+      })
+      .catch(() => {
+        setBusLabel("BUS #882");
+        setRouteLabel("Colombo → Piliyandala");
+      });
+  }, []);
+
   const journeySteps: StepLabel[] = [
     "Taken Bus",
     "At Bus Stand",
@@ -93,7 +116,7 @@ export default function DashboardCard() {
         <div className="dashboard-card-content">
           {/* BADGES */}
           <div className="dashboard-badges">
-            <span className="dashboard-pill dashboard-pill--bus">BUS #882</span>
+            <span className="dashboard-pill dashboard-pill--bus">{busLabel}</span>
 
             <span className="dashboard-pill dashboard-pill--active">
               <span className="dashboard-pill-dot"></span>
@@ -102,12 +125,10 @@ export default function DashboardCard() {
           </div>
 
           {/* TITLE */}
-          <h3 className="dashboard-route">
-            Colombo <span className="dashboard-route-arrow">→</span> Piliyandala
-          </h3>
+          <h3 className="dashboard-route">{routeLabel}</h3>
 
           <p className="dashboard-route-meta">
-            Route 120 Express • Expected Arrival 14:30
+            Expected Arrival 14:30
           </p>
 
           {/* INFO */}
