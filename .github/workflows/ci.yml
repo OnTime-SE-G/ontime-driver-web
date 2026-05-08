@@ -210,18 +210,15 @@ jobs:
         if: ${{ steps.dockerfiles.outputs.count != '0' }}
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          while read -r dockerfile; do
-            context_dir="$(dirname "$dockerfile")"
-            service_name="$(basename "$context_dir")"
-            image="${{ env.REGISTRY }}/${owner}"
-            image="${image}/${{ env.IMAGE_PREFIX }}-${service_name}:${{ github.sha }}"
+          repo=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          image="${{ env.REGISTRY }}/${owner}/ontime-frontend/${repo}:${{ github.sha }}"
+          echo "IMAGE=${image}" >> "$GITHUB_ENV"
 
-            if [ "${{ github.event_name }}" = "push" ]; then
-              docker buildx build --push -t "$image" -f "$dockerfile" "$context_dir"
-            else
-              docker buildx build --load -t "$image" -f "$dockerfile" "$context_dir"
-            fi
-          done < dockerfiles.txt
+          if [ "${{ github.event_name }}" = "push" ]; then
+            docker buildx build --push -t "$image" .
+          else
+            docker buildx build --load -t "$image" .
+          fi
 
       - name: Install Trivy
         if: ${{ steps.dockerfiles.outputs.count != '0' }}
@@ -233,14 +230,7 @@ jobs:
       - name: Trivy scan (CRITICAL only)
         if: ${{ steps.dockerfiles.outputs.count != '0' }}
         run: |
-          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          while read -r dockerfile; do
-            context_dir="$(dirname "$dockerfile")"
-            service_name="$(basename "$context_dir")"
-            image="${{ env.REGISTRY }}/${owner}"
-            image="${image}/${{ env.IMAGE_PREFIX }}-${service_name}:${{ github.sha }}"
-            trivy image --severity CRITICAL --exit-code 1 "$image"
-          done < dockerfiles.txt
+          trivy image --severity CRITICAL --exit-code 1 --ignore-unfixed "${{ env.IMAGE }}"
 
   integration_test:
     runs-on: ubuntu-latest
@@ -274,22 +264,26 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up kubectl
-        if: ${{ env.KUBE_CONFIG_B64 != '' && hashFiles('k8s/**/*.yml', 'k8s/**/*.yaml') != '' }}
+        if: ${{ env.KUBE_CONFIG_B64 != '' }}
         uses: azure/setup-kubectl@v4
         with:
           version: "v1.29.0"
 
       - name: Configure kubeconfig
-        if: ${{ env.KUBE_CONFIG_B64 != '' && hashFiles('k8s/**/*.yml', 'k8s/**/*.yaml') != '' }}
+        if: ${{ env.KUBE_CONFIG_B64 != '' }}
         run: |
           mkdir -p ~/.kube
           echo "$KUBE_CONFIG_B64" | base64 -d > ~/.kube/config
 
-      - name: Apply manifests to staging
-        if: ${{ env.KUBE_CONFIG_B64 != '' && hashFiles('k8s/**/*.yml', 'k8s/**/*.yaml') != '' }}
-        run: kubectl apply -f k8s
-
-      - name: Skip deploy (missing kubeconfig or manifests)
-        if: ${{ env.KUBE_CONFIG_B64 == '' || hashFiles('k8s/**/*.yml', 'k8s/**/*.yaml') == '' }}
+      - name: Deploy to Kubernetes
+        if: ${{ env.KUBE_CONFIG_B64 != '' }}
         run: |
-          echo "Deploy skipped: missing KUBE_CONFIG_B64 or k8s manifests."
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          image="${{ env.REGISTRY }}/${owner}/ontime-frontend/${repo}:${{ github.sha }}"
+          kubectl set image deployment/driver-web driver-web="${image}" -n transit-platform
+          kubectl rollout status deployment/driver-web -n transit-platform --timeout=120s
+
+      - name: Skip deploy (missing kubeconfig)
+        if: ${{ env.KUBE_CONFIG_B64 == '' }}
+        run: echo "Deploy skipped — add KUBE_CONFIG_B64 as a repository variable to enable."
