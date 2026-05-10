@@ -3,7 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, LayoutDashboard, LogOut, Map } from "lucide-react";
+import { Calendar, LayoutDashboard, LogOut, Map, UserCog } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 type ActiveTab = "dashboard" | "sessions" | "map";
 
@@ -13,6 +15,7 @@ interface SidebarProps {
 
 export default function Sidebar({ activeTab }: SidebarProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   const navClassName = (href: string, tab: ActiveTab) => {
     const isActive =
@@ -35,8 +38,8 @@ export default function Sidebar({ activeTab }: SidebarProps) {
             className="dashboard-driver-photo"
           />
           <div>
-            <p className="dashboard-driver-name">Marcus Driver</p>
-            <p className="dashboard-driver-id">ID: 4492-BT</p>
+            <p className="dashboard-driver-name">{session?.user?.name ?? "Driver"}</p>
+            <p className="dashboard-driver-id">Driver</p>
           </div>
         </div>
 
@@ -62,10 +65,15 @@ export default function Sidebar({ activeTab }: SidebarProps) {
             Map
           </Link>
 
-          <Link href="/" className="dashboard-nav-item dashboard-nav-spacer">
+          <Link href="/account" className={navClassName("/account", "dashboard")}>
+            <UserCog size={18} />
+            My Account
+          </Link>
+
+          <button onClick={() => signOut({ callbackUrl: "/" })} className="dashboard-nav-item dashboard-nav-spacer w-full text-left">
             <LogOut size={18} />
             Logout
-          </Link>
+          </button>
         </nav>
       </div>
     </aside>

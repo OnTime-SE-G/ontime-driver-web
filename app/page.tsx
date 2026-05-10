@@ -1,70 +1,54 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/dashboard");
+    setLoading(true);
+    await signIn("keycloak", { callbackUrl: "/dashboard" });
   };
 
   return (
     <div className="auth-shell">
       <div className="auth-card">
-        {/* HEADER */}
         <div className="auth-header">
           <h1 className="auth-brand">On Time</h1>
           <p className="auth-subtitle">Operator Authentication Portal</p>
         </div>
 
-        {/* FORM */}
         <form onSubmit={handleLogin} className="auth-form">
-          {/* Operator ID */}
           <div>
             <label className="auth-field-label">Operator ID</label>
-
             <div>
               <input
-                placeholder="Enter your 6-digit ID"
-                className="auth-input"
+                disabled
+                placeholder="Provided by Keycloak"
+                className="auth-input opacity-60"
               />
             </div>
           </div>
 
-          {/* Password */}
           <div>
             <label className="auth-field-label">Passcode</label>
-
             <div>
               <input
                 type="password"
-                placeholder="••••••••"
-                className="auth-input"
+                disabled
+                placeholder="Provided by Keycloak"
+                className="auth-input opacity-60"
               />
             </div>
           </div>
 
-          {/* Options */}
-          <div className="auth-row">
-            <label className="auth-remember">
-              <input type="checkbox" />
-              Remember me
-            </label>
-
-            <a href="#" className="auth-link">
-              Forgot Passcode?
-            </a>
-          </div>
-
-          {/* Button */}
-          <button type="submit" className="auth-button">
-            Initiate Shift
+          <button type="submit" disabled={loading} className="auth-button">
+            {loading ? "Redirecting..." : "Initiate Shift"}
           </button>
         </form>
 
-        {/* FOOTER */}
         <div className="auth-footer">
           <p className="auth-footer-text">
             Secure access for authorized personnel only. <br />
