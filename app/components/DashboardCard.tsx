@@ -1,139 +1,193 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Step from "./Step";
+import {
+  fetchTodayTrips,
+  fetchDrivers,
+  fetchSchedules,
+  fetchRoutes,
+  endTrip,
+  reportDelay,
+  reportIncident,
+  type Trip,
+  type Schedule,
+  type Route,
+} from "@/app/lib/driverApi";
 
-type StepLabel =
-  | "Taken Bus"
-  | "At Bus Stand"
-  | "Active on Road"
-  | "Break"
-  | "Arrived";
+type StepLabel = "Taken Bus" | "At Bus Stand" | "Active on Road" | "Break" | "Arrived";
+const STEPS: StepLabel[] = ["Taken Bus", "At Bus Stand", "Active on Road", "Break", "Arrived"];
 
-interface StepMeta {
-  icon: string;
-  summary: string;
-}
+const STEP_ICONS: Record<StepLabel, string> = {
+  "Taken Bus":       "check_circle",
+  "At Bus Stand":    "check_circle",
+  "Active on Road":  "directions_bus",
+  "Break":           "local_cafe",
+  "Arrived":         "flag",
+};
 
 export default function DashboardCard() {
-  const journeySteps: StepLabel[] = [
-    "Taken Bus",
-    "At Bus Stand",
-    "Active on Road",
-    "Break",
-    "Arrived",
-  ];
+  const { data: session } = useSession();
+  const router = useRouter();
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(2);
+  const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
+  const [schedule, setSchedule] = useState<Schedule | null>(null);
+  const [route, setRoute] = useState<Route | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [stepIndex, setStepIndex] = useState(0);
   const [selectedStep, setSelectedStep] = useState<StepLabel | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showIncidentModal, setShowIncidentModal] = useState(false);
+  const [incidentMsg, setIncidentMsg] = useState("");
 
-  const stepDetails = useMemo(
-    (): Record<StepLabel, StepMeta> => ({
-      "Taken Bus": {
-        icon: "check_circle",
-        summary: "Driver has started the assigned route.",
-      },
-      "At Bus Stand": {
-        icon: "check_circle",
-        summary: "Vehicle reached the pickup stand and waiting passengers.",
-      },
-      "Active on Road": {
-        icon: "directions_bus",
-        summary: "Session is in progress with live tracking enabled.",
-      },
-      Break: {
-        icon: "local_cafe",
-        summary: "Driver break has been marked for this session.",
-      },
-      Arrived: {
-        icon: "flag",
-        summary: "Bus reached destination and can be completed.",
-      },
-    }),
-    [],
-  );
+  const operatorId = (session as { operatorId?: string } & typeof session)?.operatorId;
 
-  const modalData = selectedStep ? stepDetails[selectedStep] : null;
-  const selectedStepIndex = selectedStep
-    ? journeySteps.indexOf(selectedStep)
-    : -1;
-  const canMoveToNextStep =
-    selectedStepIndex !== -1 && selectedStepIndex < journeySteps.length - 1;
+  const load = useCallback(async () => {
+    if (!operatorId) return;
+    setLoading(true);
+    try {
+      const [allDrivers, allTrips, allSchedules, allRoutes] = await Promise.all([
+        fetchDrivers(),
+        fetchTodayTrips(),
+        fetchSchedules(),
+        fetchRoutes(),
+      ]);
+      const me = allDrivers.find((d) => d.username === operatorId || d.license_number === operatorId);
+      if (!me) { setActiveTrip(null); return; }
 
-  useEffect(() => {
-    if (!selectedStep) return;
+      const trip = allTrips.find((t) => t.driver_id === me.id && t.status === "EN_ROUTE") ?? null;
+      setActiveTrip(trip);
 
-    const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelectedStep(null);
+      if (trip) {
+        const sched = allSchedules.find((s) => s.id === trip.schedule_id) ?? null;
+        setSchedule(sched);
+        if (sched) setRoute(allRoutes.find((r) => r.id === sched.route_id) ?? null);
       }
-    };
-
-    window.addEventListener("keydown", handleKeydown);
-    return () => window.removeEventListener("keydown", handleKeydown);
-  }, [selectedStep]);
-
-  const moveToNextState = () => {
-    if (
-      selectedStepIndex === -1 ||
-      selectedStepIndex >= journeySteps.length - 1
-    ) {
-      return;
+    } catch {
+      setError("Failed to load trip data.");
+    } finally {
+      setLoading(false);
     }
+  }, [operatorId]);
 
-    const nextIndex = selectedStepIndex + 1;
-    setCurrentStepIndex(nextIndex);
-    setSelectedStep(journeySteps[nextIndex]);
+  useEffect(() => { load(); }, [load]);
+
+  const handleEndTrip = async () => {
+    if (!activeTrip) return;
+    setActionLoading(true);
+    try {
+      await endTrip(activeTrip.id);
+      router.push("/sessions");
+    } catch {
+      setError("Failed to end trip. Try again.");
+    } finally {
+      setActionLoading(false);
+      setSelectedStep(null);
+    }
   };
+
+  const handleReportIncident = async () => {
+    if (!activeTrip) return;
+    setActionLoading(true);
+    try {
+      await reportIncident(activeTrip.id, "BREAKDOWN", incidentMsg || undefined);
+      await load();
+      setShowIncidentModal(false);
+      setIncidentMsg("");
+    } catch {
+      setError("Failed to report incident.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReportDelay = async (minutes: number) => {
+    if (!activeTrip) return;
+    try {
+      await reportDelay(activeTrip.id, minutes);
+      await load();
+    } catch {
+      setError("Failed to report delay.");
+    }
+  };
+
+  const moveToNextStep = () => {
+    const next = stepIndex + 1;
+    if (next >= STEPS.length) return;
+    setStepIndex(next);
+    setSelectedStep(STEPS[next]);
+    if (STEPS[next] === "Arrived") handleEndTrip();
+  };
+
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  if (loading) {
+    return <div className="dashboard-card-stack"><p className="text-sm text-gray-400 text-center py-12">Loading trip data…</p></div>;
+  }
+
+  if (!activeTrip) {
+    return (
+      <div className="dashboard-card-stack">
+        <div className="dashboard-card">
+          <div className="dashboard-card-content">
+            <p className="text-sm text-gray-500 text-center py-8">No active trip. Go to Sessions to start one.</p>
+            <button className="sessions-start-button w-full mt-4" onClick={() => router.push("/sessions")}>
+              <span className="material-symbols-outlined">calendar_today</span>
+              View Sessions
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-card-stack">
+      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700 mb-2">{error}</p>}
+
       {/* MAIN CARD */}
       <div className="dashboard-card">
         <div className="dashboard-card-content">
-          {/* BADGES */}
           <div className="dashboard-badges">
-            <span className="dashboard-pill dashboard-pill--bus">BUS #882</span>
-
+            <span className="dashboard-pill dashboard-pill--bus">
+              {activeTrip.bus_id ? `BUS #${activeTrip.bus_id}` : "BUS TBD"}
+            </span>
             <span className="dashboard-pill dashboard-pill--active">
               <span className="dashboard-pill-dot"></span>
-              System Active
+              Active
             </span>
           </div>
 
-          {/* TITLE */}
           <h3 className="dashboard-route">
-            Colombo <span className="dashboard-route-arrow">→</span> Piliyandala
+            {route?.name ?? `Schedule #${activeTrip.schedule_id}`}
           </h3>
 
           <p className="dashboard-route-meta">
-            Route 120 Express • Expected Arrival 14:30
+            {schedule ? `Scheduled ${schedule.scheduled_time.slice(0, 5)}` : ""}
+            {activeTrip.actual_start_time ? ` • Started ${formatTime(activeTrip.actual_start_time)}` : ""}
+            {activeTrip.delay_minutes > 0 ? ` • Delayed ${activeTrip.delay_minutes} min` : ""}
           </p>
 
-          {/* INFO */}
           <div className="dashboard-info-grid">
             <div className="dashboard-info-card">
-              <span className="material-symbols-outlined dashboard-info-icon">
-                satellite_alt
-              </span>
+              <span className="material-symbols-outlined dashboard-info-icon">route</span>
               <div>
-                <p className="dashboard-info-title">GPS TELEMETRY</p>
-                <p className="dashboard-info-value dashboard-info-value--success">
-                  <span className="material-symbols-outlined dashboard-info-icon--sm">
-                    check_circle
-                  </span>
-                  Locked (12 Sats)
-                </p>
+                <p className="dashboard-info-title">ROUTE</p>
+                <p className="dashboard-info-value">{route?.name ?? "—"}</p>
               </div>
             </div>
-
             <div className="dashboard-info-card">
-              <span className="material-symbols-outlined dashboard-info-icon">
-                speed
-              </span>
+              <span className="material-symbols-outlined dashboard-info-icon">timer</span>
               <div>
-                <p className="dashboard-info-title">CURRENT SPEED</p>
-                <p className="dashboard-info-value">42 km/h</p>
+                <p className="dashboard-info-title">DELAY</p>
+                <p className={`dashboard-info-value ${activeTrip.delay_minutes > 0 ? "text-red-500" : "dashboard-info-value--success"}`}>
+                  {activeTrip.delay_minutes > 0 ? `+${activeTrip.delay_minutes} min` : "On time"}
+                </p>
               </div>
             </div>
           </div>
@@ -143,101 +197,88 @@ export default function DashboardCard() {
       {/* STEPPER */}
       <div className="dashboard-stepper">
         <h4 className="dashboard-stepper-title">Journey Status</h4>
-
         <div className="dashboard-stepper-track">
           <div className="dashboard-stepper-line"></div>
           <div className="dashboard-stepper-progress"></div>
-
-          <Step
-            done={0 < currentStepIndex}
-            active={0 === currentStepIndex}
-            icon="check_circle"
-            label="Taken Bus"
-            onClick={() => setSelectedStep("Taken Bus")}
-          />
-          <Step
-            done={1 < currentStepIndex}
-            active={1 === currentStepIndex}
-            icon="check_circle"
-            label="At Bus Stand"
-            onClick={() => setSelectedStep("At Bus Stand")}
-          />
-          <Step
-            done={2 < currentStepIndex}
-            active={2 === currentStepIndex}
-            icon="directions_bus"
-            label="Active on Road"
-            onClick={() => setSelectedStep("Active on Road")}
-          />
-          <Step
-            done={3 < currentStepIndex}
-            active={3 === currentStepIndex}
-            icon="local_cafe"
-            label="Break"
-            onClick={() => setSelectedStep("Break")}
-          />
-          <Step
-            done={4 < currentStepIndex}
-            active={4 === currentStepIndex}
-            icon="flag"
-            label="Arrived"
-            onClick={() => setSelectedStep("Arrived")}
-          />
+          {STEPS.map((step, i) => (
+            <Step
+              key={step}
+              done={i < stepIndex}
+              active={i === stepIndex}
+              icon={STEP_ICONS[step]}
+              label={step}
+              onClick={() => setSelectedStep(step)}
+            />
+          ))}
         </div>
       </div>
 
-      {/* BUTTONS */}
+      {/* ACTIONS */}
       <div className="dashboard-actions">
-        <button className="dashboard-action">
-          <span className="material-symbols-outlined">pause_circle</span>
-          Initiate Break
+        <button className="dashboard-action" onClick={() => handleReportDelay(5)} disabled={actionLoading}>
+          <span className="material-symbols-outlined">timer</span>
+          Report +5 min Delay
         </button>
-
-        <button className="dashboard-action--secondary">
-          <span className="material-symbols-outlined dashboard-action-icon--error">
-            emergency
-          </span>
+        <button className="dashboard-action--secondary" onClick={() => setShowIncidentModal(true)} disabled={actionLoading}>
+          <span className="material-symbols-outlined dashboard-action-icon--error">emergency</span>
           Report Incident
+        </button>
+        <button className="dashboard-action" onClick={handleEndTrip} disabled={actionLoading}>
+          <span className="material-symbols-outlined">flag</span>
+          {actionLoading ? "Ending…" : "End Trip"}
         </button>
       </div>
 
-      {selectedStep && modalData && (
-        <div
-          className="dashboard-status-modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${selectedStep} status details`}
-          onClick={() => setSelectedStep(null)}
-        >
-          <div
-            className="dashboard-status-modal"
-            onClick={(event) => event.stopPropagation()}
-          >
+      {/* STEP MODAL */}
+      {selectedStep && (
+        <div className="dashboard-status-modal-backdrop" role="dialog" aria-modal="true"
+          onClick={() => setSelectedStep(null)}>
+          <div className="dashboard-status-modal" onClick={(e) => e.stopPropagation()}>
             <div className="dashboard-status-modal-icon">
-              <span className="material-symbols-outlined">
-                {modalData.icon}
-              </span>
+              <span className="material-symbols-outlined">{STEP_ICONS[selectedStep]}</span>
             </div>
-
             <h5 className="dashboard-status-modal-title">{selectedStep}</h5>
-            <p className="dashboard-status-modal-text">{modalData.summary}</p>
-
             <div className="dashboard-status-modal-actions">
-              <button
-                type="button"
-                className="dashboard-action"
-                onClick={moveToNextState}
-                disabled={!canMoveToNextStep}
-              >
-                Move to Next State
-              </button>
-
-              <button
-                type="button"
-                className="dashboard-action--secondary"
-                onClick={() => setSelectedStep(null)}
-              >
+              {selectedStep !== "Arrived" && (
+                <button type="button" className="dashboard-action" onClick={moveToNextStep} disabled={actionLoading}>
+                  Move to Next State
+                </button>
+              )}
+              {selectedStep === "Arrived" && (
+                <button type="button" className="dashboard-action" onClick={handleEndTrip} disabled={actionLoading}>
+                  {actionLoading ? "Ending…" : "Confirm Arrival & End Trip"}
+                </button>
+              )}
+              <button type="button" className="dashboard-action--secondary" onClick={() => setSelectedStep(null)}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INCIDENT MODAL */}
+      {showIncidentModal && (
+        <div className="dashboard-status-modal-backdrop" role="dialog" aria-modal="true"
+          onClick={() => setShowIncidentModal(false)}>
+          <div className="dashboard-status-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dashboard-status-modal-icon">
+              <span className="material-symbols-outlined text-red-500">emergency</span>
+            </div>
+            <h5 className="dashboard-status-modal-title">Report Incident</h5>
+            <textarea
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm mt-2"
+              rows={3}
+              placeholder="Describe the incident (optional)…"
+              value={incidentMsg}
+              onChange={(e) => setIncidentMsg(e.target.value)}
+            />
+            <div className="dashboard-status-modal-actions">
+              <button type="button" className="dashboard-action--secondary" onClick={handleReportIncident} disabled={actionLoading}>
+                {actionLoading ? "Reporting…" : "Submit Breakdown Report"}
+              </button>
+              <button type="button" className="dashboard-action" onClick={() => setShowIncidentModal(false)}>
+                Cancel
               </button>
             </div>
           </div>
