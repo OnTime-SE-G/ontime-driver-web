@@ -29,13 +29,13 @@ const STEP_ICONS: Record<StepLabel, string> = {
 };
 
 export default function DashboardCard() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [route, setRoute] = useState<Route | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [stepIndex, setStepIndex] = useState(0);
@@ -44,7 +44,7 @@ export default function DashboardCard() {
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [incidentMsg, setIncidentMsg] = useState("");
 
-  const operatorId = (session as { operatorId?: string } & typeof session)?.operatorId;
+  const operatorId = session?.operatorId;
 
   const load = useCallback(async () => {
     if (!operatorId) return;
@@ -126,7 +126,7 @@ export default function DashboardCard() {
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return <div className="dashboard-card-stack"><p className="text-sm text-gray-400 text-center py-12">Loading trip data…</p></div>;
   }
 

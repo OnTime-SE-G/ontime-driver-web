@@ -25,18 +25,18 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
 };
 
 export default function SessionsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [trips, setTrips] = useState<Trip[]>([]);
   const [driver, setDriver] = useState<Driver | null>(null);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const operatorId = (session as { operatorId?: string } & typeof session)?.operatorId;
+  const operatorId = session?.operatorId;
 
   const load = useCallback(async () => {
     if (!operatorId) return;
@@ -118,7 +118,7 @@ export default function SessionsPage() {
             <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">{error}</p>
           )}
 
-          {loading ? (
+          {(status === "loading" || loading) ? (
             <p className="text-sm text-gray-400 mt-8 text-center">Loading sessions…</p>
           ) : trips.length === 0 ? (
             <p className="text-sm text-gray-400 mt-8 text-center">No trips assigned to you today.</p>
