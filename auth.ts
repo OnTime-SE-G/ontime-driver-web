@@ -42,12 +42,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.accessToken = (user as { accessToken?: string }).accessToken;
         token.operatorId = (user as { operatorId?: string }).operatorId;
+        token.name = user.name;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken as string;
       session.operatorId = token.operatorId as string;
+      if (session.user) {
+        session.user.name = token.name as string;
+        session.user.email = token.email as string;
+      }
       return session;
     },
   },

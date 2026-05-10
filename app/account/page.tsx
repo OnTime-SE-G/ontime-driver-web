@@ -3,6 +3,8 @@
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import { User, CreditCard, Phone, Shield } from "lucide-react";
+import Sidebar from "@/app/components/sidebar";
+import TopBar from "@/app/components/TopBar";
 
 export default function AccountPage() {
   const { data: session } = useSession();
@@ -37,7 +39,12 @@ export default function AccountPage() {
   const inputCls = "w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
+    <div className="sessions-shell">
+      <Sidebar />
+      <div className="sessions-main">
+        <TopBar />
+        <main className="sessions-content">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">My Account</h1>
         <p className="text-sm text-gray-500">Manage your profile and security settings</p>
@@ -121,6 +128,9 @@ export default function AccountPage() {
             {loading ? "Updating..." : "Update Password"}
           </button>
         </form>
+      </div>
+    </div>
+        </main>
       </div>
     </div>
   );

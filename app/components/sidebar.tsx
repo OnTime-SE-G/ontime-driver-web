@@ -30,7 +30,7 @@ export default function Sidebar({ activeTab }: SidebarProps) {
 
         <div className="dashboard-driver">
           <Image
-            src="https://i.pravatar.cc/100"
+            src={`https://i.pravatar.cc/100?u=${session?.operatorId ?? "driver"}`}
             alt="Driver profile"
             width={48}
             height={48}
@@ -38,7 +38,7 @@ export default function Sidebar({ activeTab }: SidebarProps) {
             className="dashboard-driver-photo"
           />
           <div>
-            <p className="dashboard-driver-name">{session?.user?.name ?? "Driver"}</p>
+            <p className="dashboard-driver-name">{session?.user?.name ?? "—"}</p>
             <p className="dashboard-driver-id">{session?.operatorId ?? "—"}</p>
           </div>
         </div>
