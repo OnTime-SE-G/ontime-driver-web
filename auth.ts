@@ -29,9 +29,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
         return {
           id: payload.sub,
-          name: payload.preferred_username ?? payload.name ?? credentials.username,
+          name: payload.name ?? payload.preferred_username ?? credentials.username,
           email: payload.email ?? null,
           accessToken: tokens.access_token,
+          operatorId: payload.preferred_username ?? credentials.username,
         };
       },
     }),
@@ -40,11 +41,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.accessToken = (user as { accessToken?: string }).accessToken;
+        token.operatorId = (user as { operatorId?: string }).operatorId;
       }
       return token;
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken as string;
+      session.operatorId = token.operatorId as string;
       return session;
     },
   },

@@ -39,7 +39,7 @@ export default function Sidebar({ activeTab }: SidebarProps) {
           />
           <div>
             <p className="dashboard-driver-name">{session?.user?.name ?? "Driver"}</p>
-            <p className="dashboard-driver-id">Driver</p>
+            <p className="dashboard-driver-id">{session?.operatorId ?? "—"}</p>
           </div>
         </div>
 

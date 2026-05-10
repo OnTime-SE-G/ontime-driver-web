@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 1. Verify current password by attempting a token grant
-  const username = session.user?.name ?? "";
+  const username = (session as { operatorId?: string } & typeof session).operatorId ?? session.user?.name ?? "";
   const verifyRes = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

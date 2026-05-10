@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
+import { User, CreditCard, Phone, Shield } from "lucide-react";
 
 export default function AccountPage() {
   const { data: session } = useSession();
@@ -36,10 +37,59 @@ export default function AccountPage() {
   const inputCls = "w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
 
   return (
-    <div className="mx-auto max-w-md p-6">
-      <h1 className="mb-1 text-2xl font-bold">My Account</h1>
-      <p className="mb-6 text-sm text-gray-500">Signed in as <span className="font-medium">{session?.user?.name ?? "Driver"}</span></p>
+    <div className="mx-auto max-w-2xl space-y-6 p-6">
+      <div>
+        <h1 className="text-2xl font-bold">My Account</h1>
+        <p className="text-sm text-gray-500">Manage your profile and security settings</p>
+      </div>
 
+      {/* Driver Details */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold">Driver Profile</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-blue-50 p-2 text-blue-600">
+              <User size={16} />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Full Name</p>
+              <p className="mt-0.5 text-sm font-semibold text-gray-900">{session?.user?.name ?? "—"}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-blue-50 p-2 text-blue-600">
+              <CreditCard size={16} />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Operator ID</p>
+              <p className="mt-0.5 text-sm font-semibold text-gray-900">{session?.operatorId ?? "—"}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-blue-50 p-2 text-blue-600">
+              <Phone size={16} />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Email</p>
+              <p className="mt-0.5 text-sm font-semibold text-gray-900">{session?.user?.email ?? "—"}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-green-50 p-2 text-green-600">
+              <Shield size={16} />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Role</p>
+              <p className="mt-0.5 text-sm font-semibold text-gray-900">Driver</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Change Password */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-base font-semibold">Change Password</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
