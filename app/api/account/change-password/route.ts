@@ -3,13 +3,12 @@ import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
-const KEYCLOAK_ISSUER = process.env.AUTH_KEYCLOAK_ISSUER!;
-const CLIENT_ID = process.env.AUTH_KEYCLOAK_ID!;
-const CLIENT_SECRET = process.env.AUTH_KEYCLOAK_SECRET!;
-const ADMIN_BASE = KEYCLOAK_ISSUER.replace("/realms/ontime", "/admin/realms/ontime");
-const TOKEN_URL = `${KEYCLOAK_ISSUER}/protocol/openid-connect/token`;
-
 export async function POST(req: NextRequest) {
+  const KEYCLOAK_ISSUER = process.env.AUTH_KEYCLOAK_ISSUER!;
+  const CLIENT_ID = process.env.AUTH_KEYCLOAK_ID!;
+  const CLIENT_SECRET = process.env.AUTH_KEYCLOAK_SECRET!;
+  const ADMIN_BASE = KEYCLOAK_ISSUER.replace("/realms/ontime", "/admin/realms/ontime");
+  const TOKEN_URL = `${KEYCLOAK_ISSUER}/protocol/openid-connect/token`;
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
