@@ -26,7 +26,10 @@ export default function Sidebar({ activeTab }: SidebarProps) {
   return (
     <aside className="dashboard-sidebar">
       <div>
-        <h1 className="dashboard-sidebar-title">On Time</h1>
+        <div className="mb-6">
+          <h1 className="dashboard-sidebar-title">On Time</h1>
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-0.5">Public Transport</p>
+        </div>
 
         <div className="dashboard-driver">
           <Image
