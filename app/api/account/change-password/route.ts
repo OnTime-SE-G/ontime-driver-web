@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
+export const dynamic = "force-dynamic";
+
 const KEYCLOAK_ISSUER = process.env.AUTH_KEYCLOAK_ISSUER!;
 const CLIENT_ID = process.env.AUTH_KEYCLOAK_ID!;
 const CLIENT_SECRET = process.env.AUTH_KEYCLOAK_SECRET!;
