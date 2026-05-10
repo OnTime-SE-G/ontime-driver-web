@@ -31,8 +31,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: payload.sub,
           name: payload.name ?? payload.preferred_username ?? credentials.username,
           email: payload.email ?? null,
-          accessToken: tokens.access_token,
-          operatorId: payload.preferred_username ?? credentials.username,
+          operatorId: payload.preferred_username as string ?? credentials.username as string,
+          accessToken: tokens.access_token as string,
         };
       },
     }),
@@ -40,19 +40,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.accessToken = (user as { accessToken?: string }).accessToken;
-        token.operatorId = (user as { operatorId?: string }).operatorId;
         token.name = user.name;
         token.email = user.email;
+        token.operatorId = user.operatorId;
+        token.accessToken = user.accessToken;
       }
       return token;
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken as string;
-      session.operatorId = token.operatorId as string;
+      session.accessToken = (token.accessToken ?? "") as string;
       if (session.user) {
-        session.user.name = token.name as string;
-        session.user.email = token.email as string;
+        session.user.name = (token.name ?? "") as string;
+        session.user.email = (token.email ?? "") as string;
+        session.user.operatorId = (token.operatorId ?? "") as string;
       }
       return session;
     },

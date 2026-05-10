@@ -3,7 +3,13 @@ import { DefaultSession } from "next-auth";
 declare module "next-auth" {
   interface Session extends DefaultSession {
     accessToken: string;
-    operatorId: string;
+    user: {
+      operatorId: string;
+    } & DefaultSession["user"];
+  }
+  interface User {
+    operatorId?: string;
+    accessToken?: string;
   }
 }
 

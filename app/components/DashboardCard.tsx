@@ -44,7 +44,7 @@ export default function DashboardCard() {
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [incidentMsg, setIncidentMsg] = useState("");
 
-  const operatorId = session?.operatorId;
+  const operatorId = session?.user?.operatorId;
 
   const load = useCallback(async () => {
     if (!operatorId) return;

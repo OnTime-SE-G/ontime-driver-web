@@ -70,7 +70,7 @@ export default function AccountPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Operator ID</p>
-              <p className="mt-0.5 text-sm font-semibold text-gray-900">{session?.operatorId ?? "—"}</p>
+              <p className="mt-0.5 text-sm font-semibold text-gray-900">{session?.user?.operatorId ?? "—"}</p>
             </div>
           </div>
 

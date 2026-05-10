@@ -36,7 +36,7 @@ export default function SessionsPage() {
   const [startingId, setStartingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const operatorId = session?.operatorId;
+  const operatorId = session?.user?.operatorId;
 
   const load = useCallback(async () => {
     if (!operatorId) return;
