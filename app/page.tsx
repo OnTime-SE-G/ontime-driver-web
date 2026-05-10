@@ -4,12 +4,25 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 
 export default function LoginPage() {
+  const [form, setForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await signIn("keycloak", { callbackUrl: "/dashboard" });
+    setError("");
+    const res = await signIn("credentials", {
+      username: form.username,
+      password: form.password,
+      redirect: false,
+    });
+    if (res?.error) {
+      setError("Invalid Operator ID or Passcode.");
+      setLoading(false);
+    } else {
+      window.location.href = "/dashboard";
+    }
   };
 
   return (
@@ -23,29 +36,34 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="auth-form">
           <div>
             <label className="auth-field-label">Operator ID</label>
-            <div>
-              <input
-                disabled
-                placeholder="Provided by Keycloak"
-                className="auth-input opacity-60"
-              />
-            </div>
+            <input
+              type="text"
+              required
+              value={form.username}
+              onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+              placeholder="Enter your operator ID"
+              className="auth-input"
+            />
           </div>
 
           <div>
             <label className="auth-field-label">Passcode</label>
-            <div>
-              <input
-                type="password"
-                disabled
-                placeholder="Provided by Keycloak"
-                className="auth-input opacity-60"
-              />
-            </div>
+            <input
+              type="password"
+              required
+              value={form.password}
+              onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+              placeholder="Enter your passcode"
+              className="auth-input"
+            />
           </div>
 
+          {error && (
+            <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p>
+          )}
+
           <button type="submit" disabled={loading} className="auth-button">
-            {loading ? "Redirecting..." : "Initiate Shift"}
+            {loading ? "Authenticating..." : "Initiate Shift"}
           </button>
         </form>
 
