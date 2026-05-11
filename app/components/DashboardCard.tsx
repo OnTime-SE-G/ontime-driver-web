@@ -5,8 +5,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Step from "./Step";
 import {
+  fetchMe,
   fetchTodayTrips,
-  fetchDrivers,
   fetchSchedules,
   fetchRoutes,
   endTrip,
@@ -44,22 +44,20 @@ export default function DashboardCard() {
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [incidentMsg, setIncidentMsg] = useState("");
 
-  const operatorId = session?.user?.operatorId;
+  const accessToken = session?.accessToken;
 
   const load = useCallback(async () => {
-    if (!operatorId) return;
+    if (!accessToken) return;
     setLoading(true);
     try {
-      const [allDrivers, allTrips, allSchedules, allRoutes] = await Promise.all([
-        fetchDrivers(),
-        fetchTodayTrips(),
+      const driver = await fetchMe(accessToken);
+      const [allTrips, allSchedules, allRoutes] = await Promise.all([
+        fetchTodayTrips(accessToken, driver.id),
         fetchSchedules(),
         fetchRoutes(),
       ]);
-      const me = allDrivers.find((d) => d.username === operatorId || d.license_number === operatorId);
-      if (!me) { setActiveTrip(null); return; }
 
-      const trip = allTrips.find((t) => t.driver_id === me.id && t.status === "EN_ROUTE") ?? null;
+      const trip = allTrips.find((t) => t.status === "EN_ROUTE") ?? null;
       setActiveTrip(trip);
 
       if (trip) {
@@ -72,7 +70,7 @@ export default function DashboardCard() {
     } finally {
       setLoading(false);
     }
-  }, [operatorId]);
+  }, [accessToken]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -80,7 +78,7 @@ export default function DashboardCard() {
     if (!activeTrip) return;
     setActionLoading(true);
     try {
-      await endTrip(activeTrip.id);
+      await endTrip(activeTrip.id, accessToken!);
       router.push("/sessions");
     } catch {
       setError("Failed to end trip. Try again.");
@@ -94,7 +92,7 @@ export default function DashboardCard() {
     if (!activeTrip) return;
     setActionLoading(true);
     try {
-      await reportIncident(activeTrip.id, "BREAKDOWN", incidentMsg || undefined);
+      await reportIncident(activeTrip.id, "BREAKDOWN", accessToken!, incidentMsg || undefined);
       await load();
       setShowIncidentModal(false);
       setIncidentMsg("");
@@ -108,7 +106,7 @@ export default function DashboardCard() {
   const handleReportDelay = async (minutes: number) => {
     if (!activeTrip) return;
     try {
-      await reportDelay(activeTrip.id, minutes);
+      await reportDelay(activeTrip.id, minutes, accessToken!);
       await load();
     } catch {
       setError("Failed to report delay.");

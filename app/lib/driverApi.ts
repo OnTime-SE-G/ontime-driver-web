@@ -36,8 +36,20 @@ export type Route = {
   route_number: string | null;
 };
 
-export async function fetchTodayTrips(): Promise<Trip[]> {
-  const res = await fetch(`${BASE}/api/v1/driver/trips/today`, { cache: "no-store" });
+export async function fetchMe(token: string): Promise<Driver> {
+  const res = await fetch(`${BASE}/api/v1/driver/me`, {
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch driver profile: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchTodayTrips(token: string, driverId: number): Promise<Trip[]> {
+  const res = await fetch(`${BASE}/api/v1/driver/trips/today?driver_id=${driverId}`, {
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) return [];
   return res.json();
 }
@@ -60,32 +72,43 @@ export async function fetchRoutes(): Promise<Route[]> {
   return res.json();
 }
 
-export async function startTrip(tripId: string): Promise<Trip> {
-  const res = await fetch(`${BASE}/api/v1/driver/trips/${tripId}/start`, { method: "POST" });
+export async function startTrip(tripId: string, token: string): Promise<Trip> {
+  const res = await fetch(`${BASE}/api/v1/driver/trips/${tripId}/start`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-export async function endTrip(tripId: string): Promise<Trip> {
-  const res = await fetch(`${BASE}/api/v1/driver/trips/${tripId}/end`, { method: "POST" });
+export async function endTrip(tripId: string, token: string): Promise<Trip> {
+  const res = await fetch(`${BASE}/api/v1/driver/trips/${tripId}/end`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-export async function reportDelay(tripId: string, delayMinutes: number): Promise<Trip> {
+export async function reportDelay(tripId: string, delayMinutes: number, token: string): Promise<Trip> {
   const res = await fetch(`${BASE}/api/v1/driver/trips/${tripId}/report-delay`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ delay_minutes: delayMinutes }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-export async function reportIncident(tripId: string, incidentType: string, message?: string): Promise<Trip> {
+export async function reportIncident(
+  tripId: string,
+  incidentType: string,
+  token: string,
+  message?: string,
+): Promise<Trip> {
   const res = await fetch(`${BASE}/api/v1/driver/trips/${tripId}/report-incident`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ incident_type: incidentType, message }),
   });
   if (!res.ok) throw new Error(await res.text());

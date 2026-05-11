@@ -6,13 +6,12 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
 import TopBar from "@/app/components/TopBar";
 import {
+  fetchMe,
   fetchTodayTrips,
-  fetchDrivers,
   fetchSchedules,
   fetchRoutes,
   startTrip,
   type Trip,
-  type Driver,
   type Schedule,
   type Route,
 } from "@/app/lib/driverApi";
@@ -29,52 +28,42 @@ export default function SessionsPage() {
   const router = useRouter();
 
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [driver, setDriver] = useState<Driver | null>(null);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const operatorId = session?.user?.operatorId;
+  const accessToken = session?.accessToken;
 
   const load = useCallback(async () => {
-    if (!operatorId) return;
+    if (!accessToken) return;
     setLoading(true);
     setError("");
     try {
-      const [allDrivers, allTrips, allSchedules, allRoutes] = await Promise.all([
-        fetchDrivers(),
-        fetchTodayTrips(),
+      const driver = await fetchMe(accessToken);
+      const [myTrips, allSchedules, allRoutes] = await Promise.all([
+        fetchTodayTrips(accessToken, driver.id),
         fetchSchedules(),
         fetchRoutes(),
       ]);
 
-      const me = allDrivers.find(
-        (d) => d.username === operatorId || d.license_number === operatorId
-      ) ?? null;
-      setDriver(me);
+      setTrips(myTrips);
       setSchedules(allSchedules);
       setRoutes(allRoutes);
-
-      if (me) {
-        setTrips(allTrips.filter((t) => t.driver_id === me.id));
-      } else {
-        setTrips([]);
-      }
     } catch {
       setError("Failed to load sessions. Check your connection.");
     } finally {
       setLoading(false);
     }
-  }, [operatorId]);
+  }, [accessToken]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleStart = async (tripId: string) => {
     setStartingId(tripId);
     try {
-      await startTrip(tripId);
+      await startTrip(tripId, accessToken!);
       await load();
       router.push("/dashboard");
     } catch {
