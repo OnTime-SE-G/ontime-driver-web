@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL!;
+const BASE = process.env.NEXT_PUBLIC_G2_BASE_URL!;
 
 export type Trip = {
   id: string;
