@@ -1,11 +1,27 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calendar, LayoutDashboard, LogOut, Map, UserCog } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
+
+const AVATAR_COLORS = [
+  "#4F46E5", "#7C3AED", "#DB2777", "#DC2626",
+  "#D97706", "#059669", "#0284C7", "#0891B2",
+];
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function getAvatarColor(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 type ActiveTab = "dashboard" | "sessions" | "map";
 
@@ -32,14 +48,22 @@ export default function Sidebar({ activeTab }: SidebarProps) {
         </div>
 
         <div className="dashboard-driver">
-          <Image
-            src={`https://i.pravatar.cc/100?u=${session?.user?.operatorId ?? "driver"}`}
-            alt="Driver profile"
-            width={48}
-            height={48}
-            unoptimized
+          <div
             className="dashboard-driver-photo"
-          />
+            style={{
+              backgroundColor: getAvatarColor(session?.user?.name ?? session?.user?.operatorId ?? "driver"),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              userSelect: "none",
+              flexShrink: 0,
+            }}
+          >
+            {getInitials(session?.user?.name ?? session?.user?.operatorId ?? "DV")}
+          </div>
           <div>
             <p className="dashboard-driver-name">{session?.user?.name ?? "—"}</p>
             <p className="dashboard-driver-id">{session?.user?.operatorId ?? "—"}</p>
