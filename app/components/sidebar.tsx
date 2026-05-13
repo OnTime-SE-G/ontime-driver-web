@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, LayoutDashboard, LogOut, Map, UserCog } from "lucide-react";
+import { Calendar, LayoutDashboard, LogOut, UserCog } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
 
@@ -85,11 +85,6 @@ export default function Sidebar({ activeTab }: SidebarProps) {
           >
             <Calendar size={18} />
             Sessions
-          </Link>
-
-          <Link href="/map" className={navClassName("/map", "map")}>
-            <Map size={18} />
-            Map
           </Link>
 
           <Link href="/account" className={navClassName("/account", "dashboard")}>
